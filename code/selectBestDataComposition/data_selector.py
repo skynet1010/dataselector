@@ -203,7 +203,7 @@ def analysis(conn,args,task):
 
     retrain = False
 
-    niteration = nepoch = 0
+    niteration = nepoch = 1
     best_acc = 0.0
     best_loss = best_exec_time = sys.float_info.max
     cur.execute(table_row_sql(state_table_name, task))
@@ -219,7 +219,7 @@ def analysis(conn,args,task):
         retrain=True
     
 
-    for iteration in range(niteration,args.iterations):
+    for iteration in range(niteration,args.iterations+1):
         best_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","best_alexnet.pth")
 
         state_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","state_alexnet.pth")
@@ -245,7 +245,7 @@ def analysis(conn,args,task):
 
         update = False
         no_improve_it = 0
-        for epoch in range(nepoch,args.epochs):
+        for epoch in range(nepoch,args.epochs+1):
             try:
                 start = time.time()
                 loss_train,acc_train = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
@@ -283,7 +283,7 @@ def analysis(conn,args,task):
                 print(e)
                 print("GOODBY :)))")
                 return False
-        if iteration == (args.iterations-1):
+        if iteration == (args.iterations):
             writer.add_hparams({"key":data_composition_key,"ss":ss},{"hparam/accuracy":best_acc,"hparam/loss":best_loss,"hparam/execution_time":best_exec_time})
     return True
 
