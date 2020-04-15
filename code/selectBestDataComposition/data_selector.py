@@ -237,7 +237,7 @@ def analysis(conn,args,task):
 
         if retrain:
             if os.path.isfile(state_checkpoint_path):
-                checkpoint = torch.load(state_checkpoint_path)
+                state_checkpoint = torch.load(state_checkpoint_path)
                 model.load_state_dict(state_checkpoint["model_state_dict"])
                 optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
                 print("Model loaded from file.")
