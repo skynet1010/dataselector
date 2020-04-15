@@ -276,7 +276,7 @@ def analysis(conn,args,task):
                     torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
                     cur.execute(update_row(state_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
                     conn.commit()
-                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch+1, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
+                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
                     break
             except KeyboardInterrupt as e:
