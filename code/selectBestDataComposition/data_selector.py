@@ -188,12 +188,18 @@ def analysis(conn,args,task):
     test_data_loader = torch.utils.data.DataLoader(test_ds,num_workers=16,batch_size=args.batch_size,pin_memory=True,shuffle=False)
 
     state_table_name = "task_states"
-    cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (state_table_name,))
-    table_exists = cur.fetchone()[0]
-    if not table_exists:
-        psql = create_table_sql(state_table_name)
-        cur.execute(psql)
-        conn.commit()
+    ds_results_table_name = "ds_results"
+
+    def make_sure_table_exist(table_name):
+        cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (table_name,))
+        table_exists = cur.fetchone()[0]
+        if not table_exists:
+            psql = create_table_sql(table_name)
+            cur.execute(psql)
+            conn.commit()
+
+    make_sure_table_exist(state_table_name)
+    make_sure_table_exist(ds_results_table_name)
 
     retrain = False
 
@@ -205,14 +211,18 @@ def analysis(conn,args,task):
     if res == []:
         cur.execute(insert_row(state_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
         conn.commit()
+        cur.execute(insert_row(ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
+        conn.commit()
     else:
         niteration, nepoch, best_acc, best_loss, best_exec_time = res[0]
+        nepoch+=1
         retrain=True
     
 
     for iteration in range(niteration,args.iterations):
-        checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","best_alexnet.pth")
+        best_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","best_alexnet.pth")
 
+        state_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","state_alexnet.pth")
         writer = SummaryWriter(log_dir=os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}"))
         print(data_composition_key,iteration)
         
@@ -226,14 +236,15 @@ def analysis(conn,args,task):
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 
         if retrain:
-            if os.path.isfile(checkpoint_path):
-                checkpoint = torch.load(checkpoint_path)
-                model.load_state_dict(checkpoint["model_state_dict"])
-                optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            if os.path.isfile(state_checkpoint_path):
+                checkpoint = torch.load(state_checkpoint_path)
+                model.load_state_dict(state_checkpoint["model_state_dict"])
+                optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
                 print("Model loaded from file.")
             retrain=False
 
         update = False
+        no_improve_it = 0
         for epoch in range(nepoch,args.epochs):
             try:
                 start = time.time()
@@ -253,12 +264,21 @@ def analysis(conn,args,task):
                 elif acc_test == best_acc and best_loss == loss_test:
                     update=True
                 if update:
+                    no_improve_it = 0
                     best_exec_time = curr_exec_time
-                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, checkpoint_path)
-                    cur.execute(update_row(state_table_name,task,niteration,nepoch,best_acc,best_loss,best_exec_time))
+                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
+                    cur.execute(update_row(ds_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
                     conn.commit()
                     update=False
+                else:
+                    no_improve_it+=1
+                if epoch%args.state_update_intervall==0:
+                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
+                    cur.execute(update_row(state_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                    conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch+1, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
+                if no_improve_it == args.earlystopping_it:
+                    break
             except KeyboardInterrupt as e:
                 print(e)
                 print("GOODBY :)))")

@@ -16,8 +16,9 @@ def main():
     parser.add_argument("-db", "--database", dest="database", default="elfi")
     parser.add_argument("-dbu", "--database_user", dest="database_user", default="user")
     parser.add_argument("-dbpw", "--database_password", dest="database_password", default="password123")
+    parser.add_argument("-eit", "--earlystopping_it", dest="earlystopping_it", default=5,type=int)
+    parser.add_argument("-uin", "--state_update_intervall", dest="state_update_intervall", default=5,type=int)
     args = parser.parse_args()
-
     if args.kind_of_analysis == "data":
         data_selector.start_task_listener(args)
     elif args.kind_of_analysis == "model":
