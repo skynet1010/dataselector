@@ -146,7 +146,7 @@ def create_table_sql(table_name):
     );
     """ if table_name == "ds_best_results" else f"""
     CREATE TABLE {table_name}(
-        timestamp int PRIMARY KEY,
+        timestamp float PRIMARY KEY,
         task text NOT NULL,
         niteration INT NOT NULL,
         nepoch INT NOT NULL,
@@ -157,7 +157,7 @@ def create_table_sql(table_name):
     );
     """
 
-def insert_row(table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max):
+def insert_row(table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
     return f"""
     INSERT INTO {table_name}(
         task, niteration, nepoch, best_acc, best_loss, best_exec_time
@@ -167,10 +167,10 @@ def insert_row(table_name, task, niteration, nepoch, best_acc, best_loss, best_e
     );
     """ if table_name=="ds_best_results" else f"""
     INSERT INTO {table_name}(
-        task, niteration, nepoch, acc_test, acc_train, loss_test, loss_train
+        timestamp,task, niteration, nepoch, acc_test, acc_train, loss_test, loss_train
     )
     VALUES(
-        '{task}',{niteration},{nepoch},{curr_acc_test},{curr_acc_train},{curr_loss_test},{curr_loss_train}
+        {timestamp}, '{task}',{niteration},{nepoch},{curr_acc_test},{curr_acc_train},{curr_loss_test},{curr_loss_train}
     );
     """
 
@@ -318,7 +318,7 @@ def analysis(conn,args,task):
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(state_table_name,task,iteration,epoch,acc_test,acc_train,loss_test,loss_train))
+                cur.execute(insert_row(state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train))
                 conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
