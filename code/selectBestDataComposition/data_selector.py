@@ -119,7 +119,20 @@ def table_row_sql(table_name, task):
         best_exec_time 
     FROM {table_name} 
     WHERE task='{task}';
+    """ if table_name == "ds_best_results" else f"""
+    WITH 
+        roi AS (SELECT * FROM {table_name} WHERE task='{task}'),
+        maxTimeStamp AS (SELECT MAX(timestamp) FROM roi)
+    SELECT 
+        roi.niteration, 
+        roi.nepoch
+    FROM 
+        roi,
+        maxTimeStamp
+    WHERE timestamp=maxTimeStamp.max;
     """
+
+#WITH roi AS (SELECT * FROM ds_results WHERE niteration=5), max_acc AS (SELECT MAX(best_acc) FROM roi) SELECT roi.* FROM roi, max_acc WHERE best_acc=max_acc.max;
 
 def create_table_sql(table_name):
     return f"""
@@ -131,15 +144,33 @@ def create_table_sql(table_name):
         best_loss float8 NOT NULL,
         best_exec_time float8 NOT NULL
     );
+    """ if table_name == "ds_best_results" else f"""
+    CREATE TABLE {table_name}(
+        timestamp int PRIMARY KEY,
+        task text NOT NULL,
+        niteration INT NOT NULL,
+        nepoch INT NOT NULL,
+        acc_test float8 NOT NULL,
+        acc_train float8 NOT NULL,
+        loss_test float8 NOT NULL,
+        loss_train float8 NOT NULL,
+    );
     """
 
-def insert_row(table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time):
+def insert_row(table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max):
     return f"""
     INSERT INTO {table_name}(
         task, niteration, nepoch, best_acc, best_loss, best_exec_time
     )
     VALUES(
         '{task}',{niteration},{nepoch},{best_acc},{best_loss},{best_exec_time}
+    );
+    """ if table_name=="ds_best_results" else f"""
+    INSERT INTO {table_name}(
+        task, niteration, nepoch, acc_test, acc_train, loss_test, loss_train
+    )
+    VALUES(
+        '{task}',{niteration},{nepoch},{curr_acc_test},{curr_acc_train},{curr_loss_test},{curr_loss_train}
     );
     """
 
@@ -188,7 +219,7 @@ def analysis(conn,args,task):
     test_data_loader = torch.utils.data.DataLoader(test_ds,num_workers=16,batch_size=args.batch_size,pin_memory=True,shuffle=False)
 
     state_table_name = "task_states"
-    ds_results_table_name = "ds_results"
+    ds_results_table_name = "ds_best_results"
 
     def make_sure_table_exist(table_name):
         cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (table_name,))
@@ -206,31 +237,36 @@ def analysis(conn,args,task):
     niteration = nepoch = 1
     best_acc = 0.0
     best_loss = best_exec_time = sys.float_info.max
-    cur.execute(table_row_sql(state_table_name, task))
+    cur.execute(table_row_sql(ds_results_table_name, task))
     res = cur.fetchall()
     if res == []:
-        cur.execute(insert_row(state_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
-        conn.commit()
         cur.execute(insert_row(ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
         conn.commit()
     else:
-        niteration, nepoch, best_acc, best_loss, best_exec_time = res[0]
+        _, _, best_acc, best_loss, best_exec_time = res[0]
         nepoch+=1
         retrain=True
+
+    if retrain:
+        cur.execute(table_row_sql(state_table_name, task))
+        res = cur.fetchall()
+        if res != []:
+            niteration, nepoch = res[0]
+            nepoch+=1
     
 
     for iteration in range(niteration,args.iterations+1):
-        best_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","best_alexnet.pth")
+        best_checkpoint_path = os.path.join(results_dir,f"{data_composition_key}",f"{ss}","best_alexnet.pth")
 
-        state_checkpoint_path = os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}","state_alexnet.pth")
-        writer = SummaryWriter(log_dir=os.path.join(results_dir,f"key={data_composition_key}_search_size={ss}_iteration={iteration}"))
+        state_checkpoint_path = os.path.join(results_dir,f"{data_composition_key}",f"{ss}","state_alexnet.pth")
+        #writer = SummaryWriter(log_dir=os.path.join(results_dir,f"{data_composition_key}",f"{ss}",f"iteration_{iteration}"))
         print(data_composition_key,iteration)
         
         model = manipulateModel(args.is_feature_extraction,data_compositions[data_composition_key])
 
-        if iteration == 0:
-            data = next(iter(train_data_loader))
-            writer.add_graph(model,torch.FloatTensor(data["imagery"].float()).cuda())
+        # if iteration == 1:
+        #     data = next(iter(train_data_loader))
+        #     writer.add_graph(model,torch.FloatTensor(data["imagery"].float()).cuda())
 
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
@@ -245,6 +281,9 @@ def analysis(conn,args,task):
 
         update = False
         no_improve_it = 0
+
+        best_acc_curr_iteration = 0.0
+        best_loss_curr_iteration = sys.float_info.max
         for epoch in range(nepoch,args.epochs+1):
             try:
                 start = time.time()
@@ -252,8 +291,8 @@ def analysis(conn,args,task):
                 loss_test,correct, total =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
                 curr_exec_time = time.time()-start
                 acc_test = correct/total
-                writer.add_scalars('{}/Loss'.format(data_composition_key), {"train":loss_train,"test":loss_test}, epoch)
-                writer.add_scalars('{}/Accuracy'.format(data_composition_key), {"train":acc_train,"test":acc_test}, epoch)
+                # writer.add_scalars('{}/Loss'.format(data_composition_key), {"train":loss_train,"test":loss_test}, epoch)
+                # writer.add_scalars('{}/Accuracy'.format(data_composition_key), {"train":acc_train,"test":acc_test}, epoch)
                 if acc_test > best_acc:
                     best_acc = acc_test
                     best_loss = loss_test
@@ -264,18 +303,23 @@ def analysis(conn,args,task):
                 elif acc_test == best_acc and best_loss == loss_test:
                     update=True
                 if update:
+                    best_acc_curr_iteration = acc_test
+                    best_loss_curr_iteration = loss_test
                     no_improve_it = 0
                     best_exec_time = curr_exec_time
                     torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
                     cur.execute(update_row(ds_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
                     conn.commit()
                     update=False
+                elif acc_test > best_acc_curr_iteration or loss_test < best_loss_curr_iteration:
+                    best_acc_curr_iteration = acc_test
+                    best_loss_curr_iteration = loss_test
+                    no_improve_it = 0
                 else:
                     no_improve_it+=1
-                if epoch%args.state_update_intervall==0:
-                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                    cur.execute(update_row(state_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
-                    conn.commit()
+                torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
+                cur.execute(insert_row(state_table_name,task,iteration,epoch,acc_test,acc_train,loss_test,loss_train))
+                conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
                     break
@@ -283,8 +327,8 @@ def analysis(conn,args,task):
                 print(e)
                 print("GOODBY :)))")
                 return False
-        if iteration == (args.iterations):
-            writer.add_hparams({"key":data_composition_key,"ss":ss},{"hparam/accuracy":best_acc,"hparam/loss":best_loss,"hparam/execution_time":best_exec_time})
+        # if iteration == (args.iterations):
+        #     writer.add_hparams({"key":data_composition_key,"ss":ss},{"hparam/accuracy":best_acc,"hparam/loss":best_loss,"hparam/execution_time":best_exec_time})
     return True
 
 
@@ -293,7 +337,8 @@ def start_task_listener(args):
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
-            host=args.rabbitmq_server
+            host=args.rabbitmq_server,
+            heartbeat=0
         )
     )
 
@@ -332,7 +377,3 @@ def start_task_listener(args):
     channel.basic_consume(queue="task_queue",on_message_callback=callback)
 
     channel.start_consuming()
-
-if __name__=="__main__":
-
-    main()
