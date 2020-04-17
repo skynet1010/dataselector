@@ -41,11 +41,11 @@ def main():
     args = parser.parse_args()
     if args.kind_of_analysis == "data":
         if not ip_address_is_valid(args.rabbitmq_server):
-            addr = socket.gethostname(args.rabbitmq_server)
+            addr = socket.gethostbyname(args.rabbitmq_server)
             print(addr)
             args.rabbitmq_server = addr
         if not ip_address_is_valid(args.database_host):
-            args.database_host = socket.gethostname(args.database_host)
+            args.database_host = socket.gethostbyname(args.database_host)
         data_selector.start_task_listener(args)
     elif args.kind_of_analysis == "model":
         #TODO muss noch näher spezifiziert werden.
