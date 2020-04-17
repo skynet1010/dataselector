@@ -125,7 +125,9 @@ def table_row_sql(table_name, task):
         maxTimeStamp AS (SELECT MAX(timestamp) FROM roi)
     SELECT 
         roi.niteration, 
-        roi.nepoch
+        roi.nepoch,
+        roi.acc_test,
+        roi.loss_test
     FROM 
         roi,
         maxTimeStamp
@@ -251,7 +253,7 @@ def analysis(conn,args,task):
         cur.execute(table_row_sql(state_table_name, task))
         res = cur.fetchall()
         if res != []:
-            niteration, nepoch = res[0]
+            niteration, nepoch, _, _ = res[0]
             nepoch+=1
     
 
@@ -271,19 +273,25 @@ def analysis(conn,args,task):
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 
+        best_acc_curr_iteration = 0.0
+        best_loss_curr_iteration = sys.float_info.max
+
         if retrain:
             if os.path.isfile(state_checkpoint_path):
                 state_checkpoint = torch.load(state_checkpoint_path)
                 model.load_state_dict(state_checkpoint["model_state_dict"])
                 optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
                 print("Model loaded from file.")
+            cur.execute(table_row_sql(state_table_name, task))
+            res = cur.fetchall()
+            if res != []:
+                _, _, best_acc_curr_iteration, best_loss_curr_iteration = res[0]
             retrain=False
 
         update = False
         no_improve_it = 0
 
-        best_acc_curr_iteration = 0.0
-        best_loss_curr_iteration = sys.float_info.max
+        
         for epoch in range(nepoch,args.epochs+1):
             try:
                 start = time.time()
@@ -338,7 +346,7 @@ def start_task_listener(args):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             host=args.rabbitmq_server,
-            heartbeat=1200
+            heartbeat=0
         )
     )
 
