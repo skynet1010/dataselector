@@ -338,7 +338,7 @@ def start_task_listener(args):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             host=args.rabbitmq_server,
-            heartbeat=0
+            heartbeat=1200
         )
     )
 
