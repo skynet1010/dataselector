@@ -335,6 +335,8 @@ def analysis(conn,args,task):
                 print(e)
                 print("GOODBY :)))")
                 return False
+            except Exception as e:
+                print(e)
         # if iteration == (args.iterations):
         #     writer.add_hparams({"key":data_composition_key,"ss":ss},{"hparam/accuracy":best_acc,"hparam/loss":best_loss,"hparam/execution_time":best_exec_time})
     return True
