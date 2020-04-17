@@ -155,7 +155,7 @@ def create_table_sql(table_name):
         acc_test float8 NOT NULL,
         acc_train float8 NOT NULL,
         loss_test float8 NOT NULL,
-        loss_train float8 NOT NULL,
+        loss_train float8 NOT NULL
     );
     """
 
@@ -333,7 +333,7 @@ def analysis(conn,args,task):
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train))
+                cur.execute(insert_row(state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
                 conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
