@@ -258,9 +258,16 @@ def analysis(conn,args,task):
     
 
     for iteration in range(niteration,args.iterations+1):
-        best_checkpoint_path = os.path.join(results_dir,f"{data_composition_key}",f"{ss}","best_alexnet.pth")
+        res_path = os.path.join(results_dir,f"{data_composition_key}",f"{ss}")
+        if not os.path.isdir(res_path):
+            try:
+                os.makedirs(res_path)
+            except Exception as e:
+                print(e)
+                exit(1)
+        best_checkpoint_path = os.path.join(res_path,"best_alexnet.pth")
 
-        state_checkpoint_path = os.path.join(results_dir,f"{data_composition_key}",f"{ss}","state_alexnet.pth")
+        state_checkpoint_path = os.path.join(res_path,"state_alexnet.pth")
         #writer = SummaryWriter(log_dir=os.path.join(results_dir,f"{data_composition_key}",f"{ss}",f"iteration_{iteration}"))
         print(data_composition_key,iteration)
         
