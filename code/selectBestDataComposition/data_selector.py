@@ -109,7 +109,7 @@ def manipulateModel(is_feature_extraction,dim):
         
     return model.cuda()
     
-def table_row_sql(table_name, task):
+def table_row_sql(table_name,best_results_table_name, task):
     return  f"""
     SELECT 
         niteration, 
@@ -119,7 +119,7 @@ def table_row_sql(table_name, task):
         best_exec_time 
     FROM {table_name} 
     WHERE task='{task}';
-    """ if table_name == "ds_best_results" else f"""
+    """ if table_name == best_results_table_name else f"""
     WITH 
         roi AS (SELECT * FROM {table_name} WHERE task='{task}'),
         maxTimeStamp AS (SELECT MAX(timestamp) FROM roi)
@@ -136,7 +136,7 @@ def table_row_sql(table_name, task):
 
 #WITH roi AS (SELECT * FROM ds_results WHERE niteration=5), max_acc AS (SELECT MAX(best_acc) FROM roi) SELECT roi.* FROM roi, max_acc WHERE best_acc=max_acc.max;
 
-def create_table_sql(table_name):
+def create_table_sql(table_name,best_results_table_name):
     return f"""
     CREATE TABLE {table_name}(
         task text PRIMARY KEY,
@@ -146,7 +146,7 @@ def create_table_sql(table_name):
         best_loss float8 NOT NULL,
         best_exec_time float8 NOT NULL
     );
-    """ if table_name == "ds_best_results" else f"""
+    """ if table_name == best_results_table_name else f"""
     CREATE TABLE {table_name}(
         timestamp float PRIMARY KEY,
         task text NOT NULL,
@@ -159,7 +159,7 @@ def create_table_sql(table_name):
     );
     """
 
-def insert_row(table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
+def insert_row(table_name, best_results_table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
     return f"""
     INSERT INTO {table_name}(
         task, niteration, nepoch, best_acc, best_loss, best_exec_time
@@ -167,7 +167,7 @@ def insert_row(table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys
     VALUES(
         '{task}',{niteration},{nepoch},{best_acc},{best_loss},{best_exec_time}
     );
-    """ if table_name=="ds_best_results" else f"""
+    """ if table_name==best_results_table_name else f"""
     INSERT INTO {table_name}(
         timestamp,task, niteration, nepoch, acc_test, acc_train, loss_test, loss_train
     )
@@ -224,7 +224,7 @@ def analysis(conn,args,task):
         cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (table_name,))
         table_exists = cur.fetchone()[0]
         if not table_exists:
-            psql = create_table_sql(table_name)
+            psql = create_table_sql(table_name, args.ds_results_table_name)
             cur.execute(psql)
             conn.commit()
 
@@ -236,7 +236,7 @@ def analysis(conn,args,task):
     niteration = nepoch = 1
     best_acc = 0.0
     best_loss = best_exec_time = sys.float_info.max
-    cur.execute(table_row_sql(args.ds_results_table_name, task))
+    cur.execute(table_row_sql(args.ds_results_table_name, args.ds_results_table_name, task))
     res = cur.fetchall()
     if res == []:
         cur.execute(insert_row(args.ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
@@ -247,7 +247,7 @@ def analysis(conn,args,task):
         retrain=True
 
     if retrain:
-        cur.execute(table_row_sql(args.state_table_name, task))
+        cur.execute(table_row_sql(args.state_table_name, args.ds_results_table_name, task))
         res = cur.fetchall()
         if res != []:
             niteration, nepoch, _, _ = res[0]
@@ -286,7 +286,7 @@ def analysis(conn,args,task):
                 model.load_state_dict(state_checkpoint["model_state_dict"])
                 optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
                 print("Model loaded from file.")
-            cur.execute(table_row_sql(args.state_table_name, task))
+            cur.execute(table_row_sql(args.state_table_name, args.ds_results_table_name, task))
             res = cur.fetchall()
             if res != []:
                 _, _, best_acc_curr_iteration, best_loss_curr_iteration = res[0]
@@ -330,7 +330,7 @@ def analysis(conn,args,task):
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(args.state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
+                cur.execute(insert_row(args.state_table_name, args.ds_results_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
                 conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
