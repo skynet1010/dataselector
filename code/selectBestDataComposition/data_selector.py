@@ -220,9 +220,6 @@ def analysis(conn,args,task):
     train_data_loader = torch.utils.data.DataLoader(train_ds,num_workers=16,batch_size=args.batch_size,pin_memory=True,shuffle=False)
     test_data_loader = torch.utils.data.DataLoader(test_ds,num_workers=16,batch_size=args.batch_size,pin_memory=True,shuffle=False)
 
-    state_table_name = "task_states"
-    ds_results_table_name = "ds_best_results"
-
     def make_sure_table_exist(table_name):
         cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (table_name,))
         table_exists = cur.fetchone()[0]
@@ -231,18 +228,18 @@ def analysis(conn,args,task):
             cur.execute(psql)
             conn.commit()
 
-    make_sure_table_exist(state_table_name)
-    make_sure_table_exist(ds_results_table_name)
+    make_sure_table_exist(args.state_table_name)
+    make_sure_table_exist(args.ds_results_table_name)
 
     retrain = False
 
     niteration = nepoch = 1
     best_acc = 0.0
     best_loss = best_exec_time = sys.float_info.max
-    cur.execute(table_row_sql(ds_results_table_name, task))
+    cur.execute(table_row_sql(args.ds_results_table_name, task))
     res = cur.fetchall()
     if res == []:
-        cur.execute(insert_row(ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
+        cur.execute(insert_row(args.ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
         conn.commit()
     else:
         _, _, best_acc, best_loss, best_exec_time = res[0]
@@ -250,7 +247,7 @@ def analysis(conn,args,task):
         retrain=True
 
     if retrain:
-        cur.execute(table_row_sql(state_table_name, task))
+        cur.execute(table_row_sql(args.state_table_name, task))
         res = cur.fetchall()
         if res != []:
             niteration, nepoch, _, _ = res[0]
@@ -289,7 +286,7 @@ def analysis(conn,args,task):
                 model.load_state_dict(state_checkpoint["model_state_dict"])
                 optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
                 print("Model loaded from file.")
-            cur.execute(table_row_sql(state_table_name, task))
+            cur.execute(table_row_sql(args.state_table_name, task))
             res = cur.fetchall()
             if res != []:
                 _, _, best_acc_curr_iteration, best_loss_curr_iteration = res[0]
@@ -323,7 +320,7 @@ def analysis(conn,args,task):
                     no_improve_it = 0
                     best_exec_time = curr_exec_time
                     torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
-                    cur.execute(update_row(ds_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                    cur.execute(update_row(args.ds_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
                     conn.commit()
                     update=False
                 elif acc_test > best_acc_curr_iteration or loss_test < best_loss_curr_iteration:
@@ -333,7 +330,7 @@ def analysis(conn,args,task):
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
+                cur.execute(insert_row(args.state_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
                 conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
