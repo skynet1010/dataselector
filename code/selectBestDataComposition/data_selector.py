@@ -195,7 +195,7 @@ def analysis(conn,args,task):
 
     ss,data_composition_key=task.split(":")
 
-    results_dir = os.path.join(args.results_dir,"runs")
+    results_dir = os.path.join(args.results_dir,args.runs_version)
 
     input_filename = f"train_test_data_{ss}_supervised.hdf5"
 

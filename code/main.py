@@ -31,6 +31,7 @@ def main():
     parser.add_argument("-ife", "--is_feature_extraction", dest="is_feature_extraction", default=1,type=int,help="0=False,1=True")
     parser.add_argument("-d", "--data_dir", dest="data_dir", default=os.path.join("..","shared","data"))
     parser.add_argument("-r", "--results_dir", dest="results_dir", default=os.path.join("..","shared","results"))
+    parser.add_argument("-rv", "--runs_version", dest="runs_version",default="runs")
     parser.add_argument("-rmqs", "--rabbitmq_server", dest="rabbitmq_server", default="messagebroker") #sollte durch den k8s proxy aufgelöst werden.
     parser.add_argument("-dbh", "--database_host", dest="database_host", default="postgres") #sollte durch den k8s proxy aufgelöst werden.
     parser.add_argument("-db", "--database", dest="database", default="elfi")
