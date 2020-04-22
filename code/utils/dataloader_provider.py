@@ -2,8 +2,8 @@ import torch
 import os
 import shutil
 import multiprocessing
-from hdf5_reader import Hdf5Dataset as Dataset
-from consts import time_stamp
+from utils.hdf5_reader import Hdf5Dataset as Dataset
+from utils.consts import time_stamp
 
 
 

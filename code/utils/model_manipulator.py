@@ -1,5 +1,5 @@
 from torch import nn
-from consts import nr_of_classes, model_dict
+from utils.consts import nr_of_classes, model_dict
 
 
 def set_parameter_requires_grad(model, feature_extracting):

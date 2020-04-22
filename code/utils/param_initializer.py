@@ -1,5 +1,5 @@
 import sys
-from postgres_functions import table_row_sql, insert_row
+from utils.postgres_functions import table_row_sql, insert_row
 
 
 def init_analysis_params(args, conn, cur, task):

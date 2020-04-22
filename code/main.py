@@ -19,7 +19,6 @@ def main():
     parser.add_argument("-dbpw", "--database_password", dest="database_password", default="password123")
     parser.add_argument("-eit", "--earlystopping_it", dest="earlystopping_it", default=5,type=int)
 
-
     args = parser.parse_args()
     
     args.rabbitmq_server = get_valid_ip(args.rabbitmq_server)
