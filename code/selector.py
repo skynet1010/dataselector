@@ -21,7 +21,7 @@ def get_retrain_model_param(args,cur, model,optimizer,state_checkpoint_path,task
             model.load_state_dict(state_checkpoint["model_state_dict"])
             optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
             print("Model loaded from file.")
-        cur.execute(table_row_sql(state_table_name, ds_results_table_name, task))
+        cur.execute(table_row_sql(state_table_name, task))
         res = cur.fetchall()
         if res != []:
             _, _, best_acc_curr_iteration, best_loss_curr_iteration = res[0]
@@ -106,7 +106,7 @@ def analysis(conn,args,task):
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(state_table_name, ds_results_table_name,task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
+                cur.execute(insert_row(state_table_name, task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
                 conn.commit()
                 print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
