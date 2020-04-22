@@ -1,8 +1,10 @@
 import pika
 import time
+from ip_provider import get_valid_ip
+
 
 connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost'))
+            pika.ConnectionParameters(host=get_valid_ip(input())))
 channel = connection.channel()
 
 channel.queue_declare(queue='task_queue', durable=True)

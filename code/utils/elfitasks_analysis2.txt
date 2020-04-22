@@ -1,0 +1,4 @@
+ss8:NDVI_SLOPE:alexnet
+ss16:NDVI_SLOPE:alexnet
+ss24:NDVI_SLOPE:alexnet
+ss32:NDVI_SLOPE:alexnet

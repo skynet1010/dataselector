@@ -4,6 +4,7 @@
 
 import pika
 import sys
+from ip_provider import get_valid_ip
 
 from argparse import ArgumentParser
 
@@ -17,7 +18,7 @@ with open(args.tasks,"r") as f:
         tasks.append(line)
 
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=input()))
+connection = pika.BlockingConnection(pika.ConnectionParameters(host=get_valid_ip(input())))
 channel = connection.channel()
 
 channel.queue_declare(queue='task_queue', durable=True)
