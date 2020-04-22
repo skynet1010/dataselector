@@ -239,7 +239,7 @@ def analysis(conn,args,task):
     cur.execute(table_row_sql(args.ds_results_table_name, args.ds_results_table_name, task))
     res = cur.fetchall()
     if res == []:
-        cur.execute(insert_row(args.ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
+        cur.execute(insert_row(args.ds_results_table_name, args.ds_results_table_name, task, niteration, nepoch, best_acc, best_loss, best_exec_time))
         conn.commit()
     else:
         _, _, best_acc, best_loss, best_exec_time = res[0]
