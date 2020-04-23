@@ -12,7 +12,7 @@ import sys
 import shutil
 from torch import nn
 
-def get_retrain_model_param(args,cur, model,optimizer,state_checkpoint_path,task):
+def get_retrain_model_param(args,cur, model,optimizer,state_checkpoint_path,task,retrain):
     best_acc_curr_iteration = 0.0
     best_loss_curr_iteration = sys.float_info.max
     if retrain:
@@ -63,12 +63,12 @@ def analysis(conn,args,task):
 
         print(data_composition_key,iteration)
         
-        model = manipulateModel(model_dict[model_key],args.is_feature_extraction,data_compositions[data_composition_key])
+        model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
 
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 
-        model,optimizer,best_acc_curr_iteration,best_loss_curr_iteration,retrain = get_retrain_model_param(args,cur,model,optimizer,state_checkpoint_path,task)
+        model,optimizer,best_acc_curr_iteration,best_loss_curr_iteration,retrain = get_retrain_model_param(args,cur,model,optimizer,state_checkpoint_path,task,retrain)
 
         update = False
         no_improve_it = 0
