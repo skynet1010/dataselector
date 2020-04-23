@@ -9,7 +9,7 @@ from utils.consts import time_stamp
 
 def get_results_dir(args):
     
-    return os.path.join(args.results_dir,f"runs_{time_stamp}")
+    return os.path.join(args.results_dir,args.run_dir)
 
 def get_dataloaders(args,ss, data_composition_key):
 

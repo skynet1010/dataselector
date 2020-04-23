@@ -1,8 +1,7 @@
 import sys
 import time
-from utils.consts import ds_results_table_name
 
-def table_row_sql(table_name, task):
+def table_row_sql(table_name, args, task):
     return  f"""
     SELECT 
         niteration, 
@@ -12,7 +11,7 @@ def table_row_sql(table_name, task):
         best_exec_time 
     FROM {table_name} 
     WHERE task='{task}';
-    """ if table_name == ds_results_table_name else f"""
+    """ if table_name == args.best_results_table_name else f"""
     WITH 
         roi AS (SELECT * FROM {table_name} WHERE task='{task}'),
         maxTimeStamp AS (SELECT MAX(timestamp) FROM roi)
@@ -27,7 +26,7 @@ def table_row_sql(table_name, task):
     WHERE timestamp=maxTimeStamp.max;
     """
 
-def create_table_sql(table_name):
+def create_table_sql(table_name, args):
     return f"""
     CREATE TABLE {table_name}(
         task text PRIMARY KEY,
@@ -37,7 +36,7 @@ def create_table_sql(table_name):
         best_loss float8 NOT NULL,
         best_exec_time float8 NOT NULL
     );
-    """ if table_name == ds_results_table_name else f"""
+    """ if table_name == args.best_results_table_name else f"""
     CREATE TABLE {table_name}(
         timestamp float PRIMARY KEY,
         task text NOT NULL,
@@ -50,7 +49,7 @@ def create_table_sql(table_name):
     );
     """
 
-def insert_row(table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
+def insert_row(table_name, args, task, niteration, nepoch, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_test = 0.0, curr_acc_train = 0.0, curr_loss_test = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
     return f"""
     INSERT INTO {table_name}(
         task, niteration, nepoch, best_acc, best_loss, best_exec_time
@@ -58,7 +57,7 @@ def insert_row(table_name, task, niteration, nepoch, best_acc=0.0, best_loss=sys
     VALUES(
         '{task}',{niteration},{nepoch},{best_acc},{best_loss},{best_exec_time}
     );
-    """ if table_name==ds_results_table_name else f"""
+    """ if table_name==args.best_results_table_name else f"""
     INSERT INTO {table_name}(
         timestamp,task, niteration, nepoch, acc_test, acc_train, loss_test, loss_train
     )
@@ -84,6 +83,6 @@ def make_sure_table_exist(args, conn, cur, table_name):
     cur.execute("select exists(select * from information_schema.tables where table_name=%s)", (table_name,))
     table_exists = cur.fetchone()[0]
     if not table_exists:
-        psql = create_table_sql(table_name)
+        psql = create_table_sql(table_name,args)
         cur.execute(psql)
         conn.commit()
