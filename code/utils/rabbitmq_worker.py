@@ -1,6 +1,6 @@
 import pika
 import time
-from utils.ip_provider import get_valid_ip
+from ip_provider import get_valid_ip
 
 
 connection = pika.BlockingConnection(

@@ -15,13 +15,12 @@ def init_analysis_params(args, conn, cur, task):
         conn.commit()
     else:
         _, _, best_acc, best_loss, best_exec_time = res[0]
+
+    cur.execute(table_row_sql(state_table_name, task))
+    res = cur.fetchall()
+    if res != []:
+        niteration, nepoch, _, _ = res[0]
         nepoch+=1
         retrain=True
-
-    if retrain:
-        cur.execute(table_row_sql(state_table_name, task))
-        res = cur.fetchall()
-        if res != []:
-            niteration, nepoch, _, _ = res[0]
-            nepoch+=1
+        
     return retrain, niteration, nepoch, best_acc, best_loss, best_exec_time

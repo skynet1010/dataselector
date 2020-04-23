@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import os
 import task_listener
 from utils.ip_provider import get_valid_ip
+from utils.consts import state_table_name,ds_results_table_name
 
 
 def main():
@@ -18,11 +19,15 @@ def main():
     parser.add_argument("-dbu", "--database_user", dest="database_user", default="user")
     parser.add_argument("-dbpw", "--database_password", dest="database_password", default="password123")
     parser.add_argument("-eit", "--earlystopping_it", dest="earlystopping_it", default=5,type=int)
-
+    parser.add_argument("-brtn", "--best_results_table_name", dest="best_results_table_name", default="m_best_results")
+    parser.add_argument("-tstn", "--task_states_table_name", dest="task_states_table_name", default="m_task_states")
     args = parser.parse_args()
     
     args.rabbitmq_server = get_valid_ip(args.rabbitmq_server)
     args.database_host = get_valid_ip(args.database_host)
+
+    state_table_name = args.task_states_table_name
+    ds_results_table_name = args.best_results_table_name
 
     task_listener.start_task_listener(args)
 

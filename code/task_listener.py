@@ -18,6 +18,7 @@ def start_task_listener(args):
     print(" [*] Waiting for tasks. To exit press CTRL+C")
 
     def callback(ch,method,properties,body):
+        init_batch_size = args.batch_size
         task = body.decode("utf-8")
         print(" [x] Received " + task)
         finished_successfully = False
@@ -36,8 +37,13 @@ def start_task_listener(args):
                     print(f"Batch size is now: {args.batch_size}")
                     continue
                 else:
-                    raise e
-        
+                    print(e)
+                    exit(1) 
+            except Exception as e:
+                print(e)
+                exit(1)
+                    
+        args.batch_size = init_batch_size
         print(" [x] Done |:->")
         ch.basic_ack(delivery_tag=method.delivery_tag)
 

@@ -115,7 +115,7 @@ def analysis(conn,args,task):
                 print(e)
                 print("GOODBY :)))")
                 return False
-            except Exception as e:
-                print(e)
+            # except Exception as e:
+            #     print("OOOO",e)
 
     return True
