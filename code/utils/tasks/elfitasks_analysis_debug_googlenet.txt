@@ -1,0 +1,1 @@
+ss32:NDVI_SLOPE:googlenet

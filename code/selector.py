@@ -64,7 +64,7 @@ def analysis(conn,args,task):
         print(data_composition_key,iteration)
         
         model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
-
+        #return True
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 

@@ -1,0 +1,12 @@
+ss32:NDVI_SLOPE:resnet50
+ss32:NDVI_SLOPE:resnet101
+ss32:NDVI_SLOPE:alexnet
+ss32:NDVI_SLOPE:vgg16
+ss32:NDVI_SLOPE:densnet
+ss32:NDVI_SLOPE:inception
+ss32:NDVI_SLOPE:googlenet
+ss32:NDVI_SLOPE:shufflenet
+ss32:NDVI_SLOPE:mobilenet
+ss32:NDVI_SLOPE:resnext50_32x4d
+ss32:NDVI_SLOPE:resnext101_32x8d
+ss32:NDVI_SLOPE:wide_resnet50_2
