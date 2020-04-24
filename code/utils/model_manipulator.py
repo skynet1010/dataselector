@@ -1,6 +1,5 @@
 from torch import nn
 from utils.consts import nr_of_classes, model_dict
-from ..anns import googlenet
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -24,9 +23,6 @@ def manipulateModel(model_name, is_feature_extraction,dim):
         model_name == "wide_resnet50_2":
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, nr_of_classes)
-        if model_name == "inception":
-            num_ftrs = model.AuxLogits.fc.in_features
-            model.AuxLogits.fc = nn.Linear(num_ftrs,nr_of_classes)
     elif model_name =="alexnet" or model_name == "vgg16" or model_name=="mobilenet":
         layer_number = 0
         if model_name == "alexnet" or model_name == "vgg16":

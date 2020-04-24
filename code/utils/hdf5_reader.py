@@ -9,7 +9,7 @@ import cv2
 #TODO: optimieren! VIEL Bedarf
 
 class Hdf5Dataset(torch.utils.data.Dataset):
-    def __init__(self, in_file_name, training_mode, ds_kind,data_composition, transform=None):
+    def __init__(self, in_file_name, training_mode, ds_kind,data_composition, model, transform=None):
         super(Hdf5Dataset, self).__init__()
         self.file = h5py.File(in_file_name, "r")
         self.training_mode = training_mode
@@ -17,6 +17,7 @@ class Hdf5Dataset(torch.utils.data.Dataset):
         self.dir_dict = {"data":"fus_data","labels":"labels"}
         self.n_images, self.nx, self.ny, self.nz = self.file[self.root_ds_dir+self.dir_dict["data"]].shape
         self.transform = transform
+        self.model = model
 
         DATA_COMPOSITOR_FUNCTOR = {
             "RGB":self.rgb,
@@ -38,7 +39,7 @@ class Hdf5Dataset(torch.utils.data.Dataset):
         self.data_composition_function = DATA_COMPOSITOR_FUNCTOR[data_composition]
 
     def get_sample(self,index):
-        return cv2.resize(self.file[self.root_ds_dir+self.dir_dict["data"]][index],(224,224)).transpose(2,0,1)
+        return cv2.resize(self.file[self.root_ds_dir+self.dir_dict["data"]][index],(224 if not self.model=="inception" else 299,224 if not self.model=="inception" else 299)).transpose(2,0,1)
 
     def rgb(self,sample):
         return sample[:3,:,:]

@@ -1,6 +1,8 @@
 import torchvision.models as models
 import time
 from datetime import datetime
+from anns import googlenet, inception_v3
+
 
 data_compositions = {
     "RGB":3,
@@ -28,8 +30,8 @@ model_dict = \
     "alexnet":models.alexnet,
     "vgg16":models.vgg16,
     "densnet":models.densenet161,
-    "inception":models.inception_v3,
-    "googlenet":models.googlenet,
+    "inception":inception_v3,
+    "googlenet":googlenet,
     "shufflenet":models.shufflenet_v2_x1_0,
     "mobilenet":models.mobilenet_v2,
     "resnext50_32x4d":models.resnext50_32x4d,

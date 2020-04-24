@@ -45,7 +45,7 @@ def analysis(conn,args,task):
 
     ss,data_composition_key,model_key=task.split(":")
 
-    train_data_loader, test_data_loader = get_dataloaders(args,ss,data_composition_key)
+    train_data_loader, test_data_loader = get_dataloaders(args,ss,data_composition_key, model)
 
 
     make_sure_table_exist(args, conn, cur, args.task_states_table_name)
