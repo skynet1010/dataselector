@@ -57,9 +57,9 @@ def analysis(conn,args,task):
         
         res_path = get_valid_path(args,data_composition_key,ss)
 
-        best_checkpoint_path = os.path.join(res_path,"best_alexnet.pth")
+        best_checkpoint_path = os.path.join(res_path,f"best_{model_key}.pth")
 
-        state_checkpoint_path = os.path.join(res_path,"state_alexnet.pth")
+        state_checkpoint_path = os.path.join(res_path,f"state_{model_key}.pth")
 
         print(data_composition_key,iteration)
         
