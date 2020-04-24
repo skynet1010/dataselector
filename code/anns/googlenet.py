@@ -5,8 +5,6 @@ import torch.nn.functional as F
 from torch.utils.model_zoo import load_url as load_state_dict_from_url
 import re
 
-
-
 class BasicConv2d(nn.Module):
     """Some Information about BasicConv2d"""
     def __init__(self, in_filters, out_filters, kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False):
@@ -128,6 +126,8 @@ def googlenet(pretrained=False, progress=True, **kwargs):
         model.load_state_dict(state_dict)
 
         return model
+    
+    
 
     return GoogLeNet()
 
