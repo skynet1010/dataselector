@@ -42,7 +42,7 @@ class GoogLeNet(nn.Module):
     def __init__(self):
         super(GoogLeNet, self).__init__()
 
-        self.conv1 = BasicConv2d(in_filters=2,out_filters=64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
+        self.conv1 = BasicConv2d(in_filters=3,out_filters=64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
         self.maxpool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=0,dilation=1,ceil_mode=True)
 
         self.conv2 = BasicConv2d(in_filters=64,out_filters=64, kernel_size=(1,1), stride=(1,1), bias=False)
@@ -65,7 +65,7 @@ class GoogLeNet(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
         self.dropout = nn.Dropout(p=0.2,inplace=False)
-        self.fc = nn.Linear(in_features=1024, out_features=2, bias=True)
+        self.fc = nn.Linear(in_features=1024, out_features=1000, bias=True)
 
 
     def forward(self, x):
@@ -114,21 +114,15 @@ def googlenet(pretrained=False, progress=True, **kwargs):
         helper_state_dict = state_dict.copy()
         for key in helper_state_dict.keys():
             if re.match(r"aux*",key):
-                state_dict.popitem(key)
-                print("Popped:",key)
-        state_dict.popitem("aux1.conv.conv.weight")
-        state_dict.popitem("aux1.conv.conv.weight")
+                del state_dict[key]
 
-        print(state_dict.keys())
-        state_dict["conv1.conv.weight"]=state_dict["conv1.conv.weight"][:,:2,:,:]
+        #state_dict["conv1.conv.weight"]=state_dict["conv1.conv.weight"][:,:2,:,:]
         state_dict["fc.weight"] = _initialize_weights(model.fc.weight)
         state_dict["fc.bias"] = _initialize_weights(model.fc.bias)
         model.load_state_dict(state_dict)
 
         return model
     
-    
-
     return GoogLeNet()
 
 def _initialize_weights(layer):
@@ -140,9 +134,9 @@ def _initialize_weights(layer):
         layer.copy_(values)
     return values
 
-# def main():
-#     model=googlenet(pretrained=True).cuda()
-#     summary(model,(2,224,224))
+def main():
+    model=googlenet(pretrained=True).cuda()
+    summary(model,(3,224,224))
 
-# if __name__=="__main__":
-#     main()
+if __name__=="__main__":
+    main()
