@@ -107,8 +107,9 @@ def googlenet(pretrained=False, progress=True, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
+    model = GoogLeNet()
+
     if pretrained:
-        model = GoogLeNet()
         state_dict = load_state_dict_from_url(model_urls['googlenet'],
                                               progress=progress)
         helper_state_dict = state_dict.copy()
@@ -121,9 +122,8 @@ def googlenet(pretrained=False, progress=True, **kwargs):
         state_dict["fc.bias"] = _initialize_weights(model.fc.bias)
         model.load_state_dict(state_dict)
 
-        return model
     
-    return GoogLeNet()
+    return model
 
 def _initialize_weights(layer):
     import scipy.stats as stats

@@ -11,7 +11,7 @@ def get_results_dir(args):
     
     return os.path.join(args.results_dir,args.run_dir)
 
-def get_dataloaders(args,ss, data_composition_key,model):
+def get_dataloaders(args,ss, data_composition_key,model_key):
 
     results_dir = get_results_dir(args)
 
@@ -32,8 +32,8 @@ def get_dataloaders(args,ss, data_composition_key,model):
             print(e)
             exit(1)
 
-    train_ds = Dataset(full_real_input_filename, "supervised","train",data_composition_key,model)
-    test_ds = Dataset(full_real_input_filename, "supervised","test",data_composition_key, model)
+    train_ds = Dataset(full_real_input_filename, "supervised","train",data_composition_key,model_key)
+    test_ds = Dataset(full_real_input_filename, "supervised","test",data_composition_key, model_key)
     cpu_count = multiprocessing.cpu_count()
     train_data_loader = torch.utils.data.DataLoader(train_ds,num_workers=cpu_count,batch_size=args.batch_size,pin_memory=True,shuffle=False)
     test_data_loader = torch.utils.data.DataLoader(test_ds,num_workers=cpu_count,batch_size=args.batch_size,pin_memory=True,shuffle=False)
