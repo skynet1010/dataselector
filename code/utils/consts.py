@@ -1,7 +1,8 @@
 import torchvision.models as models
 import time
 from datetime import datetime
-from anns import googlenet, inception_v3
+from anns.googlenet import googlenet
+from anns.inception_v3 import inception_v3
 
 
 data_compositions = {
