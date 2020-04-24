@@ -9,7 +9,7 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 def manipulateModel(model_name, is_feature_extraction,dim):
     print(model_name)
-    model = model_dict[model_name](pretrained=is_feature_extraction) if model_name!="googlenet" else googlenet.googlenet(pretrained=True)
+    model = model_dict[model_name](pretrained=is_feature_extraction)
     set_parameter_requires_grad(model, True)
     #output layer
     if model_name == "resnet18" or \
