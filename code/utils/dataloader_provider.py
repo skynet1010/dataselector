@@ -32,6 +32,15 @@ def get_dataloaders(args,ss, data_composition_key,model_key,validation=True):
             print(e)
             exit(1)
 
+    valid_ss = ["ss8","ss16","ss24","ss32"]
+    for v_ss in valid_ss:
+        if v_ss!=ss:
+            old_input_filename = os.path.join(real_data_path,f"train_test_data_{v_ss}_supervised.hdf5")
+            if not os.path.isfile(old_input_filename):
+                continue
+            else:
+                os.remove(old_input_filename)
+
     train_ds = Dataset(full_real_input_filename, "supervised","train",data_composition_key,model_key)
     test_ds = Dataset(full_real_input_filename, "supervised","test",data_composition_key, model_key)
     cpu_count = multiprocessing.cpu_count()
