@@ -50,7 +50,8 @@ def start_task_listener(args):
             try:
                 if task=="check_best_composition":
                     get_best_data_composition(conn,args)
-                finished_successfully = analysis(conn,args,task)
+                else:
+                    finished_successfully = analysis(conn,args,task)
                 conn.close()
             except RuntimeError as e:
                 if 'out of memory' in str(e):
