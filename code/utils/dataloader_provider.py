@@ -24,13 +24,6 @@ def get_dataloaders(args,ss, data_composition_key,model_key,validation=True):
         except Exception as e:
             print(e)
             exit(1)
-    full_real_input_filename = os.path.join(real_data_path,input_filename)
-    if not os.path.isfile(full_real_input_filename):
-        try:
-            shutil.copy(os.path.join(args.data_dir,"{}".format(input_filename)),full_real_input_filename)
-        except Exception as e:
-            print(e)
-            exit(1)
 
     valid_ss = ["ss8","ss16","ss24","ss32"]
     for v_ss in valid_ss:
@@ -40,6 +33,15 @@ def get_dataloaders(args,ss, data_composition_key,model_key,validation=True):
                 continue
             else:
                 os.remove(old_input_filename)
+
+        
+    full_real_input_filename = os.path.join(real_data_path,input_filename)
+    if not os.path.isfile(full_real_input_filename):
+        try:
+            shutil.copy(os.path.join(args.data_dir,"{}".format(input_filename)),full_real_input_filename)
+        except Exception as e:
+            print(e)
+            exit(1)
 
     train_ds = Dataset(full_real_input_filename, "supervised","train",data_composition_key,model_key)
     test_ds = Dataset(full_real_input_filename, "supervised","test",data_composition_key, model_key)
