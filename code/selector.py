@@ -21,7 +21,7 @@ def get_retrain_model_param(args,cur, model,optimizer,state_checkpoint_path,task
             model.load_state_dict(state_checkpoint["model_state_dict"])
             optimizer.load_state_dict(state_checkpoint["optimizer_state_dict"])
             print("Model loaded from file.")
-        cur.execute(table_row_sql(args.task_states_table_name, args, task))
+        cur.execute(table_row_sql(args.states_current_task_table_name, args, task))
         res = cur.fetchall()
         if res != []:
             _, _, best_acc_curr_iteration, best_loss_curr_iteration = res[0]
@@ -40,82 +40,99 @@ def get_valid_path(args,data_composition_key,ss):
     return res_path
 
 def analysis(conn,args,task):
-    
-    cur = conn.cursor()
+    try:
+        cur = conn.cursor()
 
-    ss,data_composition_key,model_key=task.split(":")
+        ss,data_composition_key,model_key=task.split(":")
 
-    train_data_loader, test_data_loader = get_dataloaders(args,ss,data_composition_key, model_key)
+        train_data_loader, valid_data_loader, test_data_loader = get_dataloaders(args,ss,data_composition_key, model_key)
 
 
-    make_sure_table_exist(args, conn, cur, args.task_states_table_name)
-    make_sure_table_exist(args, conn, cur, args.best_results_table_name)
+        make_sure_table_exist(args, conn, cur, args.states_current_task_table_name)
+        make_sure_table_exist(args, conn, cur, args.best_validation_results_table_name)
+        make_sure_table_exist(args, conn, cur, args.best_test_results_table_name)
+ 
+        retrain, niteration, nepoch, best_acc, best_loss, best_exec_time = init_analysis_params(args,conn,cur,task)
 
-    retrain, niteration, nepoch, best_acc, best_loss, best_exec_time = init_analysis_params(args,conn,cur,task)
-
-    for iteration in range(niteration, args.iterations+1):
-        
         res_path = get_valid_path(args,data_composition_key,ss)
 
         best_checkpoint_path = os.path.join(res_path,f"best_{model_key}.pth")
 
         state_checkpoint_path = os.path.join(res_path,f"state_{model_key}.pth")
 
-        print(data_composition_key,iteration)
-        
-        model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
-        #return True
-        criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
+        for iteration in range(niteration, args.iterations+1):
+            print(task,iteration)
+            
+            model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
+            #return True
+            criterion = nn.MSELoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 
-        model,optimizer,best_acc_curr_iteration,best_loss_curr_iteration,retrain = get_retrain_model_param(args,cur,model,optimizer,state_checkpoint_path,task,retrain)
+            model,optimizer,best_acc_curr_iteration,best_loss_curr_iteration,retrain = get_retrain_model_param(args,cur,model,optimizer,state_checkpoint_path,task,retrain)
 
-        update = False
-        no_improve_it = 0
-        
-        for epoch in range(nepoch,args.epochs+1):
-            try:
+            update = False
+            no_improve_it = 0
+            for epoch in range(nepoch,args.epochs+1):
                 start = time.time()
                 loss_train,acc_train = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
-                loss_test,correct, total =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
+                loss_valid,correct, total =  test(model,valid_data_loader,criterion,optimizer,args.batch_size)
                 curr_exec_time = time.time()-start
-                acc_test = correct/total
+                acc_valid = correct/total
 
-                if acc_test > best_acc:
-                    best_acc = acc_test
-                    best_loss = loss_test
+                if acc_valid > best_acc:
+                    best_acc = acc_valid
+                    best_loss = loss_valid
                     update=True
-                elif acc_test == best_acc and best_loss < loss_test:
-                    best_loss_iterations = loss_test
+                elif acc_valid == best_acc and best_loss < loss_valid:
+                    best_loss = loss_valid
                     update=True
-                elif acc_test == best_acc and best_loss == loss_test:
+                elif acc_valid == best_acc and best_loss == loss_valid and curr_exec_time<best_exec_time:
                     update=True
                 if update:
-                    best_acc_curr_iteration = acc_test
-                    best_loss_curr_iteration = loss_test
+                    best_acc_curr_iteration = acc_valid
+                    best_loss_curr_iteration = loss_valid
                     no_improve_it = 0
                     best_exec_time = curr_exec_time
                     torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
-                    cur.execute(update_row(args.best_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                    cur.execute(update_row(args.best_validation_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
                     conn.commit()
                     update=False
-                elif acc_test > best_acc_curr_iteration or loss_test < best_loss_curr_iteration:
-                    best_acc_curr_iteration = acc_test
-                    best_loss_curr_iteration = loss_test
+                elif acc_valid > best_acc_curr_iteration or loss_valid < best_loss_curr_iteration:
+                    best_acc_curr_iteration = acc_valid
+                    best_loss_curr_iteration = loss_valid
                     no_improve_it = 0
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(args.task_states_table_name,args, task,iteration,epoch,curr_acc_test=acc_test,curr_acc_train=acc_train,curr_loss_test=loss_test,curr_loss_train=loss_train,timestamp=time.time()))
+                cur.execute(insert_row(args.states_current_task_table_name,args, task,iteration,epoch,curr_acc_valid=acc_valid,curr_acc_train=acc_train,curr_loss_valid=loss_valid,curr_loss_train=loss_train,timestamp=time.time()))
                 conn.commit()
-                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_test, correct,total,acc_test*100, curr_exec_time))        
+                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_valid, correct,total,acc_valid*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
                     break
-            except KeyboardInterrupt as e:
-                print(e)
-                print("GOODBY :)))")
-                return False
-            # except Exception as e:
-            #     print("OOOO",e)
+            #TODO load best model ;)
+            try:
+                os.remove(state_checkpoint_path)
+            except Exception as e:
+                print("Deleting state dict failed",e)
+
+            model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
+            if not os.path.isfile(best_checkpoint_path):
+                print("Best checkpoint file does not exist!!!")
+                return True
+            
+            best_checkpoint = torch.load(best_checkpoint_path)
+            model.load_state_dict(best_checkpoint["model_state_dict"])
+            optimizer.load_state_dict(best_checkpoint["optimizer_state_dict"])
+            start = time.time()
+            loss_test,correct, total =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
+            
+            cur.execute(insert_row(args.best_test_results_table_name, args, task, iteration, -1, correct/total, loss_test, time.time()-start))
+
+            conn.commit()
+
+    except KeyboardInterrupt as e:
+        print(e)
+        print("GOODBY :)))")
+        return False
 
     return True

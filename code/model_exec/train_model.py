@@ -21,9 +21,9 @@ def train(model, train_data_loader, criterion, optimizer,batch_size):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        running_loss+=loss.item()
+        running_loss+=(loss.item()*tmp_batch_size)
         #determine acc
         _, predicted = torch.max(output.data, 1)
         total += tmp_batch_size
         correct += (predicted.cpu() == data["labels"].view(tmp_batch_size)).sum().item()
-    return running_loss, correct/total
+    return running_loss/total, correct/total

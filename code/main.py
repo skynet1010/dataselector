@@ -18,9 +18,10 @@ def main():
     parser.add_argument("-dbu", "--database_user", dest="database_user", default="user")
     parser.add_argument("-dbpw", "--database_password", dest="database_password", default="password123")
     parser.add_argument("-eit", "--earlystopping_it", dest="earlystopping_it", default=5,type=int)
-    parser.add_argument("-brtn", "--best_results_table_name", dest="best_results_table_name", default="m_best_results")
-    parser.add_argument("-tstn", "--task_states_table_name", dest="task_states_table_name", default="m_task_states")
-    parser.add_argument("-rd", "--run_dir", dest="run_dir", default="runs_model_selection")
+    parser.add_argument("-btrtn", "--best_test_results_table_name", dest="best_test_results_table_name", default="best_test_results")
+    parser.add_argument("-bvrtn", "--best_validation_results_table_name", dest="best_validation_results_table_name", default="best_validation_results")
+    parser.add_argument("-scttn", "--states_current_task_table_name", dest="states_current_task_table_name", default="states_current_task")
+    parser.add_argument("-rd", "--run_dir", dest="run_dir", default="nips2020_runs")
     args = parser.parse_args()
     
     args.rabbitmq_server = get_valid_ip(args.rabbitmq_server)

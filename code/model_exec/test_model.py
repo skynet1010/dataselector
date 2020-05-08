@@ -19,8 +19,8 @@ def test(model, test_data_loader,criterion,optimizer,batch_size):
         
             lbl_onehot = lbl_onehot.scatter(1,data["labels"].cuda(),1).cuda()
             loss = criterion(output, lbl_onehot)
-            running_loss+=loss.item()
+            running_loss+=(loss.item()*tmp_batch_size)
             _, predicted = torch.max(output.data, 1)
             total += tmp_batch_size
             correct += (predicted.cpu() == data["labels"].view(tmp_batch_size)).sum().item()
-    return running_loss,correct,total
+    return running_loss/total,correct,total

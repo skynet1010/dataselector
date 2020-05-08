@@ -1,7 +1,27 @@
 import pika
 import psycopg2
 from selector import analysis
+from utils.rabbitmq_new_tasks import create_new_tasks
+from utils.consts import model_dict
 
+def get_best_data_composition(conn,args):
+    fn = "automatic_generated_tasks.txt"
+    
+    cur = conn.cursor()
+    query = lambda x: f"WITH acc AS(SELECT MAX(acc) as max_acc FROM {args.best_test_results_table_name} WHERE task like 'ss{x}%')  SELECT task FROM {args.best_test_results_table_name}, acc WHERE acc=max_acc and task like 'ss{x}%';"
+    with open(fn, "w") as f:
+        for ss in [8,16,32]:
+            cur.execute(query(ss))
+            res = cur.fetchall()
+            task=res[0]
+            ts = task.split(":")[:2]
+
+            for model in model_dict.keys():
+                line = ":".join(ts)
+                line+=(model+"\n")
+                f.write(line)
+    create_new_tasks(fn,args.rabbitmq_server)
+    
 def start_task_listener(args):
 
     connection = pika.BlockingConnection(
@@ -28,6 +48,8 @@ def start_task_listener(args):
             raise e
         while not finished_successfully:
             try:
+                if task=="check_best_composition":
+                    get_best_data_composition(conn,args)
                 finished_successfully = analysis(conn,args,task)
                 conn.close()
             except RuntimeError as e:
