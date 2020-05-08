@@ -13,7 +13,7 @@ def get_best_data_composition(conn,args):
         for ss in [8,16,32]:
             cur.execute(query(ss))
             res = cur.fetchall()
-            task=res[0]
+            task=res[0][0]
             ts = task.split(":")[:2]
 
             for model in model_dict.keys():
