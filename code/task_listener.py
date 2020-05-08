@@ -21,6 +21,8 @@ def get_best_data_composition(conn,args):
                 line+=(":"+model+"\n")
                 f.write(line)
     create_new_tasks(fn,args.rabbitmq_server)
+
+    return True
     
 def start_task_listener(args):
 
@@ -49,7 +51,7 @@ def start_task_listener(args):
         while not finished_successfully:
             try:
                 if task=="check_best_composition":
-                    get_best_data_composition(conn,args)
+                    finished_successfully = get_best_data_composition(conn,args)
                 else:
                     finished_successfully = analysis(conn,args,task)
                 conn.close()
