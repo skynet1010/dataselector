@@ -18,7 +18,7 @@ def get_best_data_composition(conn,args):
 
             for model in model_dict.keys():
                 line = ":".join(ts)
-                line+=(model+"\n")
+                line+=(":"+model+"\n")
                 f.write(line)
     create_new_tasks(fn,args.rabbitmq_server)
     
