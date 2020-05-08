@@ -1,7 +1,7 @@
 import pika
 import psycopg2
 from selector import analysis
-from utils.rabbitmq_new_tasks import create_new_tasks
+from utils.messagebroker_new_tasks import create_new_tasks
 from utils.consts import model_dict
 
 def get_best_data_composition(conn,args):
