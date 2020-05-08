@@ -2,6 +2,7 @@ import torch
 from utils.consts import nr_of_classes
 
 def test(model, test_data_loader,criterion,optimizer,batch_size):
+    model.eval()
     correct = 0
     total = 0
     running_loss=0
