@@ -31,7 +31,8 @@ def create_table_sql(table_name, args):
     if table_name == args.best_test_results_table_name or table_name == args.best_validation_results_table_name:
         query = f"""
         CREATE TABLE {table_name}(
-            task text PRIMARY KEY,
+            timestamp float PRIMARY KEY,
+            task text NOT NULL,
             niteration INT NOT NULL,
             nepoch INT NOT NULL,
             acc float8 NOT NULL,
@@ -57,10 +58,10 @@ def create_table_sql(table_name, args):
 def insert_row(table_name, args, task, niteration=0, nepoch=0, best_acc=0.0, best_loss=sys.float_info.max, best_exec_time=sys.float_info.max, curr_acc_valid = 0.0, curr_acc_train = 0.0, curr_loss_valid = sys.float_info.max, curr_loss_train = sys.float_info.max,timestamp=time.time()):
     return f"""
     INSERT INTO {table_name}(
-        task, niteration, nepoch, acc, loss, exec_time
+        timestamp,task, niteration, nepoch, acc, loss, exec_time
     )
     VALUES(
-        '{task}',{niteration},{nepoch},{best_acc},{best_loss},{best_exec_time}
+         {timestamp},'{task}',{niteration},{nepoch},{best_acc},{best_loss},{best_exec_time}
     );
     """ if table_name == args.best_test_results_table_name or table_name == args.best_validation_results_table_name else f"""
     INSERT INTO {table_name}(

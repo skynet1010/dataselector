@@ -126,7 +126,7 @@ def analysis(conn,args,task):
             start = time.time()
             loss_test,correct, total =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
             
-            cur.execute(insert_row(args.best_test_results_table_name, args, task, iteration, -1, correct/total, loss_test, time.time()-start))
+            cur.execute(insert_row(args.best_test_results_table_name, args, task, iteration, -1, correct/total, loss_test, time.time()-start),timestamp=time.time())
 
             conn.commit()
 
