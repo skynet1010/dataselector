@@ -72,43 +72,46 @@ def analysis(conn,args,task):
 
             update = False
             no_improve_it = 0
-            for epoch in range(nepoch,args.epochs+1):
-                start = time.time()
-                loss_train,acc_train = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
-                loss_valid,correct, total =  test(model,valid_data_loader,criterion,optimizer,args.batch_size)
-                curr_exec_time = time.time()-start
-                acc_valid = correct/total
+            try:
+                for epoch in range(nepoch,args.epochs+1):
+                    start = time.time()
+                    loss_train,acc_train = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
+                    loss_valid,correct, total =  test(model,valid_data_loader,criterion,optimizer,args.batch_size)
+                    curr_exec_time = time.time()-start
+                    acc_valid = correct/total
 
-                if acc_valid > best_acc:
-                    best_acc = acc_valid
-                    best_loss = loss_valid
-                    update=True
-                elif acc_valid == best_acc and best_loss < loss_valid:
-                    best_loss = loss_valid
-                    update=True
-                elif acc_valid == best_acc and best_loss == loss_valid and curr_exec_time<best_exec_time:
-                    update=True
-                if update:
-                    best_acc_curr_iteration = acc_valid
-                    best_loss_curr_iteration = loss_valid
-                    no_improve_it = 0
-                    best_exec_time = curr_exec_time
-                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
-                    cur.execute(update_row(args.best_validation_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                    if acc_valid > best_acc:
+                        best_acc = acc_valid
+                        best_loss = loss_valid
+                        update=True
+                    elif acc_valid == best_acc and best_loss < loss_valid:
+                        best_loss = loss_valid
+                        update=True
+                    elif acc_valid == best_acc and best_loss == loss_valid and curr_exec_time<best_exec_time:
+                        update=True
+                    if update:
+                        best_acc_curr_iteration = acc_valid
+                        best_loss_curr_iteration = loss_valid
+                        no_improve_it = 0
+                        best_exec_time = curr_exec_time
+                        torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
+                        cur.execute(update_row(args.best_validation_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                        conn.commit()
+                        update=False
+                    elif acc_valid > best_acc_curr_iteration or loss_valid < best_loss_curr_iteration:
+                        best_acc_curr_iteration = acc_valid
+                        best_loss_curr_iteration = loss_valid
+                        no_improve_it = 0
+                    else:
+                        no_improve_it+=1
+                    torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
+                    cur.execute(insert_row(args.states_current_task_table_name,args, task,iteration,epoch,curr_acc_valid=acc_valid,curr_acc_train=acc_train,curr_loss_valid=loss_valid,curr_loss_train=loss_train,timestamp=time.time()))
                     conn.commit()
-                    update=False
-                elif acc_valid > best_acc_curr_iteration or loss_valid < best_loss_curr_iteration:
-                    best_acc_curr_iteration = acc_valid
-                    best_loss_curr_iteration = loss_valid
-                    no_improve_it = 0
-                else:
-                    no_improve_it+=1
-                torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(args.states_current_task_table_name,args, task,iteration,epoch,curr_acc_valid=acc_valid,curr_acc_train=acc_train,curr_loss_valid=loss_valid,curr_loss_train=loss_train,timestamp=time.time()))
-                conn.commit()
-                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_valid, correct,total,acc_valid*100, curr_exec_time))        
-                if no_improve_it == args.earlystopping_it:
-                    break
+                    print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_valid, correct,total,acc_valid*100, curr_exec_time))        
+                    if no_improve_it == args.earlystopping_it:
+                        break
+            except Exception as e:
+                print(f"Exception occured in iteration {iteration}, epoch {epoch}",e)
             #TODO load best model ;)
             try:
                 os.remove(state_checkpoint_path)
