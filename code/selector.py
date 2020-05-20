@@ -1,11 +1,11 @@
 import torch
-from utils.consts import data_compositions, model_dict, learning_rate, nr_of_classes, time_stamp
-from utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
-from utils.model_manipulator import manipulateModel
-from model_exec.train_model import train
-from model_exec.test_model import test
-from utils.dataloader_provider import get_dataloaders, get_results_dir
-from utils.param_initializer import init_analysis_params
+from code.utils.consts import data_compositions, model_dict, learning_rate, nr_of_classes, time_stamp
+from code.utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
+from code.utils.model_manipulator import manipulateModel
+from code.model_exec.train_model import train
+from code.model_exec.test_model import test
+from code.utils.dataloader_provider import get_dataloaders, get_results_dir
+from code.utils.param_initializer import init_analysis_params
 import os
 import time
 import sys
@@ -39,6 +39,20 @@ def get_valid_path(args,data_composition_key,ss):
             exit(1)
     return res_path
 
+def calc_metrics(m):
+    m["sensitivity"] = m["TP"]/(m["TP"]+m["FN"])
+    m["miss_rate"] = 1-m["sensitivity"]
+    m["specificity"] = m["TN"]/(m["TN"]+m["FP"])
+    m["fallout"] = 1-m["specificity"]
+
+    m["precision"] = m["TP"]/(m["TP"]+m["FP"])
+    m["NPV"] = m["TN"]/(m["TN"]+m["FN"])#negative_predictive_value
+
+    m["F1"] = 2*m["precision"]*m["sensitivity"]/(m["sensitivity"]+m["precision"])
+
+    return m
+
+
 def analysis(conn,args,task):
     try:
         cur = conn.cursor()
@@ -64,7 +78,6 @@ def analysis(conn,args,task):
             print(task,iteration)
             
             model = manipulateModel(model_key,args.is_feature_extraction,data_compositions[data_composition_key])
-            #return True
             criterion = nn.MSELoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-5)
 
@@ -75,39 +88,46 @@ def analysis(conn,args,task):
             #try:
             for epoch in range(nepoch,args.epochs+1):
                 start = time.time()
-                loss_train,acc_train = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
-                loss_valid,correct, total =  test(model,valid_data_loader,criterion,optimizer,args.batch_size)
-                curr_exec_time = time.time()-start
-                acc_valid = correct/total
+                train_metrics = train(model,train_data_loader,criterion,optimizer,args.batch_size) 
+                valid_metrics =  test(model,valid_data_loader,criterion,optimizer,args.batch_size)
 
-                if acc_valid > best_acc:
-                    best_acc = acc_valid
-                    best_loss = loss_valid
+                train_metrics = calc_metrics(train_metrics)
+                valid_metrics = calc_metrics(valid_metrics)
+
+                curr_exec_time = time.time()-start
+                train_metrics["exec_time"] = curr_exec_time
+
+                
+
+                if valid_metrics["acc"] > best_acc:
+                    best_acc = valid_metrics["acc"]
+                    best_loss = valid_metrics["loss"]
                     update=True
-                elif acc_valid == best_acc and best_loss < loss_valid:
-                    best_loss = loss_valid
+                elif valid_metrics["acc"] == best_acc and best_loss < valid_metrics["loss"]:
+                    best_loss = valid_metrics["loss"]
                     update=True
-                elif acc_valid == best_acc and best_loss == loss_valid and curr_exec_time<best_exec_time:
+                elif valid_metrics["acc"] == best_acc and best_loss == valid_metrics["loss"] and curr_exec_time<best_exec_time:
                     update=True
                 if update:
-                    best_acc_curr_iteration = acc_valid
-                    best_loss_curr_iteration = loss_valid
+                    best_acc_curr_iteration = valid_metrics["acc"]
+                    best_loss_curr_iteration = valid_metrics["loss"]
                     no_improve_it = 0
                     best_exec_time = curr_exec_time
+                    valid_metrics["exec_time"]=best_exec_time
                     torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, best_checkpoint_path)
-                    cur.execute(update_row(args.best_validation_results_table_name,task,iteration,epoch,best_acc,best_loss,best_exec_time))
+                    cur.execute(update_row(args.best_validation_results_table_name,task,iteration,epoch,valid_metrics))
                     conn.commit()
                     update=False
-                elif acc_valid > best_acc_curr_iteration or loss_valid < best_loss_curr_iteration:
-                    best_acc_curr_iteration = acc_valid
-                    best_loss_curr_iteration = loss_valid
+                elif valid_metrics["acc"] > best_acc_curr_iteration or valid_metrics["loss"] < best_loss_curr_iteration:
+                    best_acc_curr_iteration = valid_metrics["acc"]
+                    best_loss_curr_iteration = valid_metrics["loss"]
                     no_improve_it = 0
                 else:
                     no_improve_it+=1
                 torch.save({"epoch":epoch,"model_state_dict":model.state_dict(),"optimizer_state_dict":optimizer.state_dict()}, state_checkpoint_path)
-                cur.execute(insert_row(args.states_current_task_table_name,args, task,iteration,epoch,curr_acc_valid=acc_valid,curr_acc_train=acc_train,curr_loss_valid=loss_valid,curr_loss_train=loss_train,timestamp=time.time()))
+                cur.execute(insert_row(args.states_current_task_table_name,args, task,iteration,epoch,timestamp=time.time(),m1=valid_metrics,m2=train_metrics))
                 conn.commit()
-                print('epoch [{}/{}], loss:{:.4f}, acc {}/{} = {:.4f}%, time: {}'.format(epoch, args.epochs, loss_valid, correct,total,acc_valid*100, curr_exec_time))        
+                print('epoch [{}/{}], loss:{:.4f}, {:.4f}%, time: {}'.format(epoch, args.epochs, valid_metrics["loss"],valid_metrics["acc"]*100, curr_exec_time))        
                 if no_improve_it == args.earlystopping_it:
                     break
             # except Exception as e:
@@ -127,12 +147,14 @@ def analysis(conn,args,task):
             model.load_state_dict(best_checkpoint["model_state_dict"])
             optimizer.load_state_dict(best_checkpoint["optimizer_state_dict"])
             start = time.time()
-            loss_test,correct, total =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
+            test_metrics =  test(model,test_data_loader,criterion,optimizer,args.batch_size)
+
+            test_metrics = calc_metrics(test_metrics)
+            test_metrics["exec_time"] = time.time()-start
             
-            cur.execute(insert_row(args.best_test_results_table_name, args, task, iteration, -1, correct/total, loss_test, time.time()-start,timestamp=time.time()))
+            cur.execute(insert_row(args.best_test_results_table_name, args, task, iteration, -1, timestamp=time.time(),m1=test_metrics))
 
             conn.commit()
-
     except KeyboardInterrupt as e:
         print(e)
         print("GOODBY :)))")

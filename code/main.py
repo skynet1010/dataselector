@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import os
 import task_listener
-from utils.ip_provider import get_valid_ip
+from code.utils.ip_provider import get_valid_ip
 
 
 def main():
@@ -18,9 +18,9 @@ def main():
     parser.add_argument("-dbu", "--database_user", dest="database_user", default="user")
     parser.add_argument("-dbpw", "--database_password", dest="database_password", default="password123")
     parser.add_argument("-eit", "--earlystopping_it", dest="earlystopping_it", default=5,type=int)
-    parser.add_argument("-btrtn", "--best_test_results_table_name", dest="best_test_results_table_name", default="best_test_results")
-    parser.add_argument("-bvrtn", "--best_validation_results_table_name", dest="best_validation_results_table_name", default="best_validation_results")
-    parser.add_argument("-scttn", "--states_current_task_table_name", dest="states_current_task_table_name", default="states_current_task")
+    parser.add_argument("-btrtn", "--best_test_results_table_name", dest="best_test_results_table_name", default="best_test_results_final")
+    parser.add_argument("-bvrtn", "--best_validation_results_table_name", dest="best_validation_results_table_name", default="best_validation_results_final")
+    parser.add_argument("-scttn", "--states_current_task_table_name", dest="states_current_task_table_name", default="states_current_task_final")
     parser.add_argument("-rd", "--run_dir", dest="run_dir", default="nips2020_runs")
     args = parser.parse_args()
     

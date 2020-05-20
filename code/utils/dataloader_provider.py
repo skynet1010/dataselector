@@ -2,8 +2,8 @@ import torch
 import os
 import shutil
 import multiprocessing
-from utils.hdf5_reader import Hdf5Dataset as Dataset
-from utils.consts import time_stamp
+from code.utils.hdf5_reader import Hdf5Dataset as Dataset
+from code.utils.consts import time_stamp
 from torch.utils.data.sampler import SubsetRandomSampler
 from numpy import floor
 

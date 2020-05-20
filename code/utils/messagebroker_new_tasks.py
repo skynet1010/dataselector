@@ -4,7 +4,7 @@
 
 import pika
 import sys
-from utils.ip_provider import get_valid_ip
+from code.utils.ip_provider import get_valid_ip
 
 def create_new_tasks(fn,broker):
     tasks=[]

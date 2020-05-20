@@ -1,8 +1,8 @@
 import pika
 import psycopg2
-from selector import analysis
-from utils.messagebroker_new_tasks import create_new_tasks
-from utils.consts import model_dict
+from code.selector import analysis
+from code.utils.messagebroker_new_tasks import create_new_tasks
+from code.utils.consts import model_dict
 
 def get_best_data_composition(conn,args):
     fn = "automatic_generated_tasks.txt"
@@ -35,7 +35,7 @@ def start_task_listener(args):
 
     channel = connection.channel()
 
-    channel.queue_declare(queue="task_queue",durable=True)
+    channel.queue_declare(queue="task_queue_final",durable=True)
 
     print(" [*] Waiting for tasks. To exit press CTRL+C")
 
@@ -74,6 +74,6 @@ def start_task_listener(args):
 
     channel.basic_qos(prefetch_count=1)#this is important to prefetch only one task <- heavily influence the way the tasks are spread over the cluster
 
-    channel.basic_consume(queue="task_queue",on_message_callback=callback)
+    channel.basic_consume(queue="task_queue_final",on_message_callback=callback)
 
     channel.start_consuming()

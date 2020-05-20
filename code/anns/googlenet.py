@@ -134,9 +134,9 @@ def _initialize_weights(layer):
         layer.copy_(values)
     return values
 
-def main():
-    model=googlenet(pretrained=True).cuda()
-    summary(model,(3,224,224))
+# def main():
+#     model=googlenet(pretrained=True).cuda()
+#     #summary(model,(3,224,224))
 
-if __name__=="__main__":
-    main()
+# if __name__=="__main__":
+#     main()
