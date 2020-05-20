@@ -1,8 +1,12 @@
 import torchvision.models as models
 import time
 from datetime import datetime
-from anns.googlenet import googlenet
-from anns.inception_v3 import inception_v3
+
+import torch
+
+from code.anns.googlenet import googlenet
+from code.anns.inception_v3 import inception_v3
+
 
 
 data_compositions = {
@@ -44,3 +48,20 @@ learning_rate = 1e-3
 nr_of_classes = 2
 
 time_stamp  = datetime.utcfromtimestamp(int(time.time())).strftime("%Y%m%d%H%M%S")
+
+optimizer_dict = {
+    "Adadelta":torch.optim.Adadelta,
+    "Adagrad":torch.optim.Adagrad,
+    "Adam":torch.optim.Adam,
+    "AdamW":torch.optim.AdamW,
+    "Adamax":torch.optim.Adamax,
+    "ASGD":torch.optim.ASGD,
+    "RMSprop":torch.optim.RMSprop,
+    "Rprop":torch.optim.Rprop,
+    "SGD":torch.optim.SGD
+}
+
+loss_dict = {
+    "BCELoss":torch.nn.BCELoss,
+    "MSELoss":torch.nn.MSELoss
+}

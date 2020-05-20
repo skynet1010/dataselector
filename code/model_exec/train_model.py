@@ -12,6 +12,8 @@ def train(model, train_data_loader, criterion, optimizer,batch_size):
     tn = 0
     avg_p_c = 0
     avg_n_c = 0
+    softmax = torch.nn.Softmax(dim=1)
+
     for step,data in enumerate(train_data_loader):
         tmp_batch_size = len(data["labels"])
         lbl_onehot = torch.FloatTensor(tmp_batch_size,nr_of_classes).cuda()
@@ -29,7 +31,9 @@ def train(model, train_data_loader, criterion, optimizer,batch_size):
         optimizer.step()
         running_loss+=(loss.item()*tmp_batch_size)
         #determine acc
-        confidence, predicted = torch.max(output.data, 1)
+        out_softmax = softmax(output)
+
+        confidence, predicted = torch.max(out_softmax, 1)
         total += tmp_batch_size
         labels = data["labels"].view(tmp_batch_size)
         pred_cpu = predicted.cpu()
