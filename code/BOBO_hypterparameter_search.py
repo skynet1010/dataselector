@@ -13,11 +13,11 @@ from ax.utils.notebook.plotting import render, init_notebook_plotting
 from typing import Dict
 import time
 
-from .utils.dataloader_provider import get_dataloaders
-from .utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
-from .utils.consts import optimizer_dict, loss_dict, data_compositions
+from utils.dataloader_provider import get_dataloaders
+from utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
+from utils.consts import optimizer_dict, loss_dict, data_compositions
 from .selector import calc_metrics
-from .utils.model_manipulator import manipulateModel
+from utils.model_manipulator import manipulateModel
 
 conn=None
 cur = None
