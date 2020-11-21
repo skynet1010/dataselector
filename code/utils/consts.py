@@ -29,19 +29,19 @@ data_compositions = {
 
 model_dict = \
 {
-    "resnet18":models.resnet18,
-    "resnet50":models.resnet50,
-    "resnet101":models.resnet101,
-    "alexnet":models.alexnet,
-    "vgg16":models.vgg16,
+    "resnet18":models.resnet18,#
+    "resnet50":models.resnet50,#
+    "resnet101":models.resnet101,#
+    "alexnet":models.alexnet,#
+    "vgg16":models.vgg16,#
     "densnet":models.densenet161,
     "inception":inception_v3,
-    "googlenet":googlenet,
-    "shufflenet":models.shufflenet_v2_x1_0,
-    "mobilenet":models.mobilenet_v2,
-    "resnext50_32x4d":models.resnext50_32x4d,
-    "resnext101_32x8d":models.resnext101_32x8d,
-    "wide_resnet50_2":models.wide_resnet50_2,
+    "googlenet":googlenet,#
+    "shufflenet":models.shufflenet_v2_x1_0,#
+    "mobilenet":models.mobilenet_v2,#
+    "resnext50_32x4d":models.resnext50_32x4d,#
+    "resnext101_32x8d":models.resnext101_32x8d,#
+    "wide_resnet50_2":models.wide_resnet50_2,#
 }
 
 learning_rate = 1e-3

@@ -103,7 +103,7 @@ def analysis(conn,args,task):
                     best_acc = valid_metrics["acc"]
                     best_loss = valid_metrics["loss"]
                     update=True
-                elif valid_metrics["acc"] == best_acc and best_loss < valid_metrics["loss"]:
+                elif valid_metrics["acc"] == best_acc and best_loss > valid_metrics["loss"]:
                     best_loss = valid_metrics["loss"]
                     update=True
                 elif valid_metrics["acc"] == best_acc and best_loss == valid_metrics["loss"] and curr_exec_time<best_exec_time:

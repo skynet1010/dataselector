@@ -8,14 +8,14 @@ from code.BOBO_hypterparameter_search import hyperparameter_optimization
 def get_best_data_composition(conn,args):
     fn = "automatic_generated_tasks.txt"
     
-    cur = conn.cursor()
-    query = lambda x: f"WITH acc AS(SELECT MAX(acc) as max_acc FROM {args.best_test_results_table_name} WHERE task like 'ss{x}%')  SELECT task FROM {args.best_test_results_table_name}, acc WHERE acc=max_acc and task like 'ss{x}%';"
+    #cur = conn.cursor()
+    #query = lambda x: f"WITH acc AS(SELECT MAX(acc) as max_acc FROM {args.best_test_results_table_name} WHERE task like 'ss{x}%')  SELECT task FROM {args.best_test_results_table_name}, acc WHERE acc=max_acc and task like 'ss{x}%';"
     with open(fn, "w") as f:
-        for ss in [8,16,32]:
-            cur.execute(query(ss))
-            res = cur.fetchall()
-            task=res[0][0]
-            ts = task.split(":")[:2]
+        for ss in [8,16]:#,32]:
+            #cur.execute(query(ss))
+            #res = cur.fetchall()
+            #task=res[0][0]
+            ts = "RGB_SLOPE"#task.split(":")[:2]
 
             for model in model_dict.keys():
                 line = ":".join(ts)
