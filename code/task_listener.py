@@ -1,9 +1,9 @@
 import pika
 import psycopg2
-from .selector import analysis
+from selector import analysis
 from utils.messagebroker_new_tasks import create_new_tasks
 from utils.consts import model_dict
-from .BOBO_hypterparameter_search import hyperparameter_optimization
+from BOBO_hypterparameter_search import hyperparameter_optimization
 
 def get_best_data_composition(conn,args):
     fn = "automatic_generated_tasks.txt"
