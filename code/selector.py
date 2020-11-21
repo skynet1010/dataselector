@@ -1,11 +1,11 @@
 import torch
-from code.utils.consts import data_compositions, model_dict, learning_rate, nr_of_classes, time_stamp
-from code.utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
-from code.utils.model_manipulator import manipulateModel
-from code.model_exec.train_model import train
-from code.model_exec.test_model import test
-from code.utils.dataloader_provider import get_dataloaders, get_results_dir
-from code.utils.param_initializer import init_analysis_params
+from .utils.consts import data_compositions, model_dict, learning_rate, nr_of_classes, time_stamp
+from .utils.postgres_functions import table_row_sql, insert_row, update_row, make_sure_table_exist
+from .utils.model_manipulator import manipulateModel
+from .model_exec.train_model import train
+from .model_exec.test_model import test
+from .utils.dataloader_provider import get_dataloaders, get_results_dir
+from .utils.param_initializer import init_analysis_params
 import os
 import time
 import sys

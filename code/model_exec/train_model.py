@@ -1,5 +1,5 @@
 import torch
-from code.utils.consts import nr_of_classes
+from ..utils.consts import nr_of_classes
 
 def train(model, train_data_loader, criterion, optimizer,batch_size):
     model.train()

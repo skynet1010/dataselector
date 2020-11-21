@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import os
 import task_listener
-from code.utils.ip_provider import get_valid_ip
+from .utils.ip_provider import get_valid_ip
 
 
 def main():

@@ -1,9 +1,9 @@
 import pika
 import psycopg2
-from code.selector import analysis
-from code.utils.messagebroker_new_tasks import create_new_tasks
-from code.utils.consts import model_dict
-from code.BOBO_hypterparameter_search import hyperparameter_optimization
+from .selector import analysis
+from .utils.messagebroker_new_tasks import create_new_tasks
+from .utils.consts import model_dict
+from .BOBO_hypterparameter_search import hyperparameter_optimization
 
 def get_best_data_composition(conn,args):
     fn = "automatic_generated_tasks.txt"
@@ -59,7 +59,7 @@ def start_task_listener(args):
 
     def callback(ch,method,properties,body):
         init_batch_size = args.batch_size
-        task = body.decode("utf-8")
+        task = body.de("utf-8")
         print(" [x] Received " + task)
         finished_successfully = False
         try:

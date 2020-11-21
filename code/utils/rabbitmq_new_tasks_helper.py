@@ -4,7 +4,7 @@
 
 import pika
 import sys
-from ip_provider import get_valid_ip
+from .ip_provider import get_valid_ip
 
 from argparse import ArgumentParser
 

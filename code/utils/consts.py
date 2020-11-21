@@ -4,8 +4,8 @@ from datetime import datetime
 
 import torch
 
-from code.anns.googlenet import googlenet
-from code.anns.inception_v3 import inception_v3
+from ..anns.googlenet import googlenet
+from ..anns.inception_v3 import inception_v3
 
 
 
