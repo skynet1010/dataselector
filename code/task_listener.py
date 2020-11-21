@@ -53,7 +53,7 @@ def start_task_listener(args):
 
     channel = connection.channel()
 
-    channel.queue_declare(queue="task_queue_final",durable=True)
+    channel.queue_declare(queue="task_queue",durable=True)
 
     print(" [*] Waiting for tasks. To exit press CTRL+C")
 
