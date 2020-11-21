@@ -15,10 +15,10 @@ def get_best_data_composition(conn,args):
             #cur.execute(query(ss))
             #res = cur.fetchall()
             #task=res[0][0]
-            ts = "RGB_SLOPE"#task.split(":")[:2]
+            ts = f"ss{ss}:RGB_SLOPE"#task.split(":")[:2]
 
             for model in model_dict.keys():
-                line = ":".join(ts)
+                line = ts
                 line+=(":"+model+"\n")
                 f.write(line)
     create_new_tasks(fn,args.rabbitmq_server)
