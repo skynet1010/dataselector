@@ -96,6 +96,6 @@ def start_task_listener(args):
 
     channel.basic_qos(prefetch_count=1)#this is important to prefetch only one task <- heavily influence the way the tasks are spread over the cluster
 
-    channel.basic_consume(queue="task_queue_final",on_message_callback=callback)
+    channel.basic_consume(queue="task_queue",on_message_callback=callback)
 
     channel.start_consuming()
