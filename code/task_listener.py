@@ -59,7 +59,7 @@ def start_task_listener(args):
 
     def callback(ch,method,properties,body):
         init_batch_size = args.batch_size
-        task = body.de("utf-8")
+        task = body.decode("utf-8")
         print(" [x] Received " + task)
         finished_successfully = False
         try:
